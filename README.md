@@ -186,15 +186,20 @@ and grounding final responses in tool results.
 
 ## Demo evidence
 
-Two screenshots from the actual local execution are recommended for readers:
+The following screenshots were captured from **live local LLM execution** of the
+fictional Support + Sales workflow (not generated illustrations).
 
-1. **Dashboard / grounded response:** show the Support + Sales routing decision and the synthetic order/quotation result.
-2. **Execution timeline:** show the `lookup_order`, `draft_quote`, `get_price` tool successes and `grounded_merge` trace.
+### Multi-Agent Control Center
 
-These are **real runtime screenshots, not generated illustrations**. Before including them,
-capture or export the images from the working local demonstration, remove any personal
-information, and place them in `docs/screenshots/`. They are intentionally not represented
-as published assets until real image files have been provided.
+![Multi-Agent Studio dashboard showing Support and Sales routing and grounded fictional order and quotation response](multi-agent-dashboard.png)
+
+### Execution timeline
+
+![Execution timeline displaying model requests, successful role-scoped tools, and the deterministic grounded merge](execution-timeline.png)
+
+The demo uses synthetic business records only. Actual inference latency depends on
+the installed local model and available hardware. Incomplete tool execution is
+reported as unverified rather than replaced with invented business facts.
 
 ## License
 
