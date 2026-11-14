@@ -38,6 +38,9 @@ export function invokeTool(agent, name, args = {}) {
   if (!tools[agent]?.some(t => t.function.name === name)) {
     return { success: false, error: "Tool not authorized for this agent" };
   }
+  if (!args || typeof args !== "object" || Array.isArray(args)) {
+    return { success: false, error: "Invalid tool arguments" };
+  }
 
   // Normalize only known synthetic SKU aliases.
   // Unknown identifiers must still fail validation.
@@ -53,7 +56,8 @@ export function invokeTool(agent, name, args = {}) {
     }
   }
   if (name === "lookup_order") {
-    const order = orders[args.order_id];
+    const order = typeof args.order_id === "string" && Object.hasOwn(orders, args.order_id)
+      ? orders[args.order_id] : undefined;
     return order ? { success: true, data: order } :
       { success: false, error: "Order not found" };
   }
@@ -132,6 +136,30 @@ export function simulate(message) {
   };
 }
 
+export function modelTimeoutMs(value = process.env.MODEL_TIMEOUT_MS) {
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 1000 && n <= 600000 ? n : 120000;
+}
+
+export function agentExecutionMode(value = process.env.AGENT_EXECUTION_MODE) {
+  return value === "sequential" ? "sequential" : "parallel";
+}
+
+function agentFailureDetail(reason) {
+  const name = reason?.name;
+  if (name === "TimeoutError" || name === "AbortError") {
+    return `Model request timed out after ${modelTimeoutMs()} ms`;
+  }
+  const message = reason?.message;
+  if (typeof message === "string" &&
+      /^Model API request failed: HTTP [0-9]{3}; code=[A-Za-z0-9_-]+$/.test(message)) {
+    return message;
+  }
+  const safeName = typeof name === "string" && /^[A-Za-z]+$/.test(name)
+    ? name : "unknown";
+  return `Specialist request failed (${safeName}); inspect the local server logs`;
+}
+
 async function callModel(messages, availableTools = [], json = false) {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error("OPENAI_API_KEY not configured");
@@ -151,7 +179,7 @@ async function callModel(messages, availableTools = [], json = false) {
       Authorization: `Bearer ${key}`
     },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(120000)
+    signal: AbortSignal.timeout(modelTimeoutMs())
   });
 
   if (!res.ok) {
@@ -213,6 +241,7 @@ Do not promise refunds, shipments or final quotations.`
   ];
 
   let needsHuman = agent === "support" && /refund/i.test(message);
+  let successfulTools = 0;
 
   for (let turn = 0; turn < 5; turn++) {
     const started = Date.now();
@@ -246,8 +275,16 @@ Do not promise refunds, shipments or final quotations.`
           });
         } catch {
           output = { success: false, error: "Invalid tool arguments" };
+          trace.push({
+            phase: "tool", agent,
+            detail: `${call.function?.name || "unknown"}: invalid tool arguments`,
+            result: "failed",
+            tool: call.function?.name || "unknown",
+            toolError: output.error
+          });
         }
 
+        if (output.success) successfulTools++;
         if (!output.success) {
           trace.push({
             phase: "guard",
@@ -273,10 +310,17 @@ Do not promise refunds, shipments or final quotations.`
       continue;
     }
 
+    if (successfulTools === 0) {
+      trace.push({
+        phase: "guard", agent,
+        detail: "Specialist returned no tool call; no facts were verified",
+        result: "blocked"
+      });
+    }
     return {
       agent,
       answer: result.content || "No answer generated.",
-      needs_human: needsHuman
+      needs_human: needsHuman || successfulTools === 0
     };
   }
 
@@ -298,24 +342,48 @@ export async function respond(message, history = []) {
   if (intents.includes("unclear")) return {
     mode: "live", intents, agents: [],
     response: "Is this about an order, pricing, or inventory?",
-    needs_human: false
+    needs_human: false, trace
   };
 
+  const executionMode = agentExecutionMode();
   trace.push({
     phase: "dispatch",
     agent: "orchestrator",
-    detail: "Dispatching specialist agents"
+    detail: `Dispatching specialist agents (${executionMode})`
   });
-  const results = await Promise.allSettled(
-    intents.map(agent => runAgent(agent, message, trace))
-  );
-  const agents = results.map((r, i) => r.status === "fulfilled" ?
-    r.value : {
+
+  // Sequential mode reduces model-memory contention on local runtimes.
+  // Both modes preserve the intent order in the returned agent results.
+  let results;
+  if (executionMode === "sequential") {
+    results = [];
+    for (const agent of intents) {
+      try {
+        results.push({ status: "fulfilled", value: await runAgent(agent, message, trace) });
+      } catch (reason) {
+        results.push({ status: "rejected", reason });
+      }
+    }
+  } else {
+    results = await Promise.allSettled(
+      intents.map(agent => runAgent(agent, message, trace))
+    );
+  }
+
+  const agents = results.map((r, i) => {
+    if (r.status === "fulfilled") return r.value;
+    trace.push({
+      phase: "error",
+      agent: intents[i],
+      detail: agentFailureDetail(r.reason),
+      result: "failed"
+    });
+    return {
       agent: intents[i],
       answer: "This specialist could not complete the request.",
       needs_human: true
-    }
-  );
+    };
+  });
 
   const composed = composeGroundedResponse(intents, trace);
   let response = composed.response;
