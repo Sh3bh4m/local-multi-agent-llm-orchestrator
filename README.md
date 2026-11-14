@@ -76,6 +76,9 @@ npm start
 ```
 
 The Strata port and model ID may differ between installations.
+**Keep Strata running and its model loaded** while using this application.
+Check the local `/v1/models` endpoint before starting Studio; a stopped
+or restarted Strata process may no longer listen on the previously used port.
 The placeholder API keys are for unauthenticated local endpoints only.
 
 Open the matching localhost port in your browser.
@@ -123,8 +126,17 @@ npm run check
 npm test
 ```
 
-The standalone project passed 22 automated tests in the
-November 2026 local verification.
+The standalone project passed **27 automated tests** in the
+November 2026 local verification, including configurable timeouts,
+sequential agent dispatch, specialist failure tracing, and tool-grounding safeguards.
+The GitHub Actions workflow also runs the syntax check and regression suite.
+
+A live local Strata run on November 14, 2026 selected Support + Sales,
+successfully executed `lookup_order`, `draft_quote`, and `get_price`,
+and returned the synthetic order status and $240 preview quote using
+the deterministic grounded composer. That particular run took approximately
+217 seconds on memory-constrained laptop hardware. This is a demonstration,
+**not a latency benchmark or proof of reliability across different prompts**.
 
 Observed local workflows included:
 - Support order lookup
