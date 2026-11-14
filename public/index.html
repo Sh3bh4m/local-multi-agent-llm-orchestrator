@@ -1,0 +1,328 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Multi-Agent Studio</title>
+<style>
+:root{
+  --bg:#080e1b;--panel:#111b2e;--panel2:#17243b;
+  --line:#253651;--text:#f1f5ff;--muted:#99aac5;
+  --cyan:#67d7ed;--violet:#a99aff;--green:#64dfb0;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;font:14px/1.5 system-ui,Segoe UI,Arial,sans-serif;
+  background:radial-gradient(ellipse at 65% 0%,#182b4d 0%,var(--bg) 52%);
+  color:var(--text)
+}
+.shell{display:grid;grid-template-columns:230px minmax(0,1fr);min-height:100vh}
+aside{
+  border-right:1px solid var(--line);padding:29px 19px;
+  background:#0a1222
+}
+.brand{display:flex;align-items:center;gap:12px;font-size:19px;font-weight:800}
+.mark{
+  background:linear-gradient(135deg,var(--cyan),var(--violet));
+  color:#091324;padding:9px 13px;border-radius:12px
+}
+.brand span:last-child{letter-spacing:-.5px}
+.navtitle{
+  margin:44px 12px 12px;color:#68809f;
+  font-size:11px;letter-spacing:1.4px;font-weight:800
+}
+.navitem{
+  padding:12px 13px;margin:5px 0;border-radius:10px;
+  color:var(--muted)
+}
+.navitem.active{background:#172941;color:#e4f5ff}
+aside .foot{
+  margin-top:55px;padding:14px;border:1px solid var(--line);
+  border-radius:12px;font-size:12px;color:var(--muted)
+}
+main{min-width:0;padding:30px 38px;max-width:1580px;width:100%;margin:auto}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.overline{color:var(--cyan);font-size:11px;letter-spacing:1.6px;font-weight:800}
+h1{font-size:32px;line-height:1.2;letter-spacing:-1.3px;margin:9px 0}
+.description{color:var(--muted);max-width:670px;margin-top:8px}
+.pill{
+  border:1px solid #36516d;border-radius:99px;
+  color:#dbeafb;background:#182940;padding:8px 13px;
+  white-space:nowrap;font-size:12px
+}
+.pill.live{border-color:#338e71;color:#76e6bd}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:28px 0}
+.stat,.panel{
+  background:linear-gradient(160deg,var(--panel),#0f192a);
+  border:1px solid var(--line);border-radius:17px;
+  box-shadow:0 12px 40px #00000019
+}
+.stat{padding:18px 19px}
+.stat .label{color:var(--muted);font-size:12px}
+.stat .value{font-size:24px;font-weight:800;margin-top:8px;word-break:break-word}
+.workspace{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:18px}
+.panel{overflow:hidden}
+.panelhead{padding:19px 22px;border-bottom:1px solid var(--line)}
+.panelhead h2{margin:0;font-size:15px}
+.panelhead p{margin:4px 0 0;color:var(--muted);font-size:12px}
+.chat{height:310px;overflow:auto;padding:21px;display:flex;flex-direction:column;gap:14px}
+.bubble{
+  max-width:88%;padding:13px 16px;border-radius:15px;
+  white-space:pre-wrap;overflow-wrap:anywhere
+}
+.bubble.assistant{align-self:flex-start;background:#1a2b43;border:1px solid #29405c}
+.bubble.user{align-self:flex-end;background:#273b69}
+.bubble .who{font-size:10px;letter-spacing:1px;font-weight:800;margin-bottom:5px;color:var(--cyan)}
+.bubble.user .who{color:#d6d0ff}
+.composer{padding:17px 20px;border-top:1px solid var(--line)}
+textarea{
+  width:100%;min-height:83px;resize:vertical;background:#0d1728;
+  color:var(--text);border:1px solid #34465f;border-radius:11px;
+  padding:13px;font:inherit;outline:none
+}
+textarea:focus{border-color:var(--cyan)}
+.actions{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px}
+button{cursor:pointer;font:inherit}
+.primary{
+  color:#06101e;background:linear-gradient(120deg,#75e4ed,#b2a1ff);
+  padding:11px 19px;border:0;border-radius:10px;font-weight:800
+}
+.primary:disabled{opacity:.5;cursor:not-allowed}
+.samples{padding:15px 20px 20px;display:flex;gap:7px;flex-wrap:wrap}
+.sample{
+  border:1px solid #34465d;border-radius:8px;padding:7px 11px;
+  background:#18263b;color:#c7d8f1;font-size:12px
+}
+.agentlist{padding:14px;display:grid;gap:10px}
+.agent{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding:14px;border:1px solid var(--line);border-radius:11px;background:#122037
+}
+.agent.selected{border-color:#5a90b5;background:#1d344b}
+.agentmain{display:flex;align-items:center;gap:12px}
+.symbol{
+  display:grid;place-items:center;width:36px;height:36px;
+  background:#243955;border-radius:10px;color:#9de8f9;font-weight:800
+}
+.agent strong{display:block}
+.agent small{display:block;color:var(--muted);margin-top:2px}
+.agentstatus{color:#8fa4bc;font-size:11px}
+.agent.selected .agentstatus{color:var(--green)}
+.tracepanel{margin-top:18px}
+.timeline{min-height:125px;padding:20px 24px;display:grid;gap:12px}
+.step{border-left:2px solid #496686;padding:1px 0 8px 17px}
+.step .type{font-weight:800;color:#e5f0ff}
+.step .detail{color:var(--muted);font-size:12px;margin-top:3px}
+.step .meta{font-size:11px;color:var(--cyan);margin-top:3px}
+.empty{color:#7f93b0;font-size:13px;padding:5px 0}
+.note{color:#8ba0bf;font-size:12px;margin-top:18px}
+@media(max-width:1050px){
+.shell{grid-template-columns:1fr}aside{display:none}
+main{padding:22px 16px}.workspace{grid-template-columns:1fr}
+}
+@media(max-width:650px){
+.stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+.top{align-items:flex-start}.pill{white-space:normal}
+h1{font-size:26px}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside>
+  <div class="brand"><span class="mark">M</span><span>Multi-Agent Studio</span></div>
+  <div class="navtitle">WORKSPACE</div>
+  <div class="navitem active">◈ Agent Control Center</div>
+  <div class="navitem">◉ Execution Timeline</div>
+  <div class="navitem">◇ Demo Environment</div>
+  <div class="foot">
+    <strong>Environment</strong>
+    <p>Local-only demo with fictional data. No external business-system access.</p>
+  </div>
+</aside>
+<main>
+  <div class="top">
+    <div>
+      <div class="overline">AI ORCHESTRATION / WORKSPACE</div>
+      <h1>Multi-Agent Control Center</h1>
+      <div class="description">Explore intent routing, specialized tools, and multi-agent response synthesis.</div>
+    </div>
+    <span class="pill" id="mode">Checking mode...</span>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="label">Specialist agents</div><div class="value">03</div></div>
+    <div class="stat"><div class="label">Last routing decision</div><div class="value" id="routes">—</div></div>
+    <div class="stat"><div class="label">Execution time</div><div class="value" id="latency">—</div></div>
+    <div class="stat"><div class="label">Trace events</div><div class="value" id="events">—</div></div>
+  </div>
+
+  <div class="workspace">
+    <section class="panel">
+      <div class="panelhead">
+        <h2>Assistant conversation</h2>
+        <p>Send a request and inspect how the agents handle it</p>
+      </div>
+      <div class="chat" id="chat">
+        <div class="bubble assistant">
+          <div class="who">ASSISTANT</div>
+          Welcome. Try a request involving orders, pricing or inventory.
+        </div>
+      </div>
+      <div class="composer">
+        <textarea id="input" aria-label="Message">My order ORD-1001 is late, and I need a quote for SKU-A100.</textarea>
+        <div class="actions">
+          <span style="color:var(--muted);font-size:12px">Synthetic data only</span>
+          <button class="primary" id="send">Run workflow</button>
+        </div>
+      </div>
+      <div class="samples">
+        <button class="sample" data-text="What is the status of order ORD-1001?">Support</button>
+        <button class="sample" data-text="What is the stock of SKU-A100?">Operations</button>
+        <button class="sample" data-text="My order ORD-1001 is late and I need a quote for SKU-A100.">Multi-intent</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panelhead">
+        <h2>Specialist agent network</h2>
+        <p>Activated agents are highlighted after routing</p>
+      </div>
+      <div class="agentlist">
+        <div class="agent" data-agent="support">
+          <div class="agentmain"><span class="symbol">S</span>
+            <div><strong>Support Agent</strong><small>Order and customer issues</small></div>
+          </div><span class="agentstatus">Idle</span>
+        </div>
+        <div class="agent" data-agent="sales">
+          <div class="agentmain"><span class="symbol">₹</span>
+            <div><strong>Sales Agent</strong><small>Products and quotations</small></div>
+          </div><span class="agentstatus">Idle</span>
+        </div>
+        <div class="agent" data-agent="ops">
+          <div class="agentmain"><span class="symbol">O</span>
+            <div><strong>Operations Agent</strong><small>Inventory and shipments</small></div>
+          </div><span class="agentstatus">Idle</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel tracepanel">
+    <div class="panelhead">
+      <h2>Execution timeline</h2>
+      <p>Actual API events in live mode; explicitly labeled simulated events otherwise</p>
+    </div>
+    <div class="timeline" id="timeline">
+      <div class="empty">No execution trace yet.</div>
+    </div>
+  </section>
+  <p class="note" id="notice">Live execution requires a privately configured OpenAI API key. Human review is advisory; no real notification is sent.</p>
+</main>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+let conversationId;
+
+function bubble(role, text) {
+  const div = document.createElement("div");
+  div.className = "bubble " + role;
+  const who = document.createElement("div");
+  who.className = "who";
+  who.textContent = role === "user" ? "YOU" : "ASSISTANT";
+  div.append(who, document.createTextNode(text));
+  $("chat").append(div);
+  $("chat").scrollTop = $("chat").scrollHeight;
+}
+
+function showAgents(intents) {
+  document.querySelectorAll(".agent").forEach(card => {
+    const active = intents.includes(card.dataset.agent);
+    card.classList.toggle("selected", active);
+    card.querySelector(".agentstatus").textContent = active ? "Selected" : "Idle";
+  });
+}
+
+function renderTimeline(trace) {
+  const root = $("timeline");
+  root.replaceChildren();
+  if (!trace.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent = "No trace events returned.";
+    root.append(empty);
+    return;
+  }
+  trace.forEach((event, index) => {
+    const div = document.createElement("div");
+    div.className = "step";
+    const type = document.createElement("div");
+    type.className = "type";
+    type.textContent = `${index+1}. ${event.phase || "event"} — ${event.agent || "system"}`;
+    const detail = document.createElement("div");
+    detail.className = "detail";
+    detail.textContent = event.detail || "";
+    div.append(type, detail);
+    if (event.duration_ms !== undefined || event.result) {
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.textContent = [
+        event.duration_ms !== undefined ? event.duration_ms + " ms" : "",
+        event.result || ""
+      ].filter(Boolean).join(" · ");
+      div.append(meta);
+    }
+    root.append(div);
+  });
+}
+
+async function runWorkflow() {
+  const message = $("input").value.trim();
+  if (!message) return;
+  $("send").disabled = true;
+  bubble("user", message);
+  const start = performance.now();
+
+  try {
+    const res = await fetch("/api/chat", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({message, conversationId})
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Request failed");
+    conversationId = data.conversationId;
+    bubble("assistant", data.response || "No response");
+    const mode = data.mode || "unknown";
+    $("mode").textContent = mode === "live" ? "● Live LLM" : "○ Simulated — no LLM";
+    $("mode").classList.toggle("live", mode === "live");
+    $("latency").textContent = Math.round(performance.now()-start) + " ms";
+    $("routes").textContent = (data.intents || []).join(" + ");
+    const trace = Array.isArray(data.trace) ? data.trace : [];
+    $("events").textContent = trace.length;
+    showAgents(data.intents || []);
+    renderTimeline(trace);
+    $("notice").textContent = mode === "live"
+      ? "Live model execution. All business records are fictional. No real transaction was created."
+      : "Simulated demonstration: predefined responses and keyword routing. No model API was called.";
+  } catch (err) {
+    bubble("assistant", "Execution failed: " + err.message);
+  } finally {
+    $("send").disabled = false;
+  }
+}
+
+$("send").addEventListener("click", runWorkflow);
+$("input").addEventListener("keydown", e => {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) runWorkflow();
+});
+document.querySelectorAll(".sample").forEach(button => {
+  button.addEventListener("click", () => { $("input").value = button.dataset.text; });
+});
+fetch("/api/health").then(r => r.json()).then(data => {
+  $("mode").textContent = data.mode === "live" ? "● Live LLM" : "○ Simulated — no LLM";
+  $("mode").classList.toggle("live", data.mode === "live");
+}).catch(() => { $("mode").textContent = "Server unavailable"; });
+</script>
+</body>
+</html>
