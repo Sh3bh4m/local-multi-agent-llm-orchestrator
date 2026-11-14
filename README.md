@@ -184,6 +184,18 @@ The focus is on integrating local LLM inference, validating tool
 arguments, controlling agent permissions, observing execution,
 and grounding final responses in tool results.
 
+## Demo evidence
+
+Two screenshots from the actual local execution are recommended for readers:
+
+1. **Dashboard / grounded response:** show the Support + Sales routing decision and the synthetic order/quotation result.
+2. **Execution timeline:** show the `lookup_order`, `draft_quote`, `get_price` tool successes and `grounded_merge` trace.
+
+These are **real runtime screenshots, not generated illustrations**. Before including them,
+capture or export the images from the working local demonstration, remove any personal
+information, and place them in `docs/screenshots/`. They are intentionally not represented
+as published assets until real image files have been provided.
+
 ## License
 
-A license has not yet been selected.
+MIT. See [LICENSE](LICENSE).
