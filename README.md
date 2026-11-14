@@ -80,6 +80,42 @@ The placeholder API keys are for unauthenticated local endpoints only.
 
 Open the matching localhost port in your browser.
 
+## Local inference reliability
+
+Local model runtimes can be memory-constrained. The application supports an
+optional **sequential** specialist execution mode to avoid running two model
+requests against the same local runtime concurrently.
+
+PowerShell example for Strata (start Strata and load your model first):
+
+```powershell
+$env:OPENAI_BASE_URL = "http://127.0.0.1:47831/v1/chat/completions"
+$env:OPENAI_MODEL = "gyro-gyro-s"
+$env:OPENAI_API_KEY = "local"
+$env:AGENT_EXECUTION_MODE = "sequential"
+$env:MODEL_TIMEOUT_MS = "300000"
+$env:PORT = "3004"
+npm start
+```
+
+| Setting | Default | Notes |
+|---|---|---|
+| `AGENT_EXECUTION_MODE` | `parallel` | Set `sequential` for memory-constrained local inference |
+| `MODEL_TIMEOUT_MS` | `120000` | Per-request timeout in milliseconds; allowed range 1,000–600,000 |
+| `OPENAI_BASE_URL` | OpenAI chat-completions URL | For local use, provide the full local `/v1/chat/completions` URL |
+| `OPENAI_MODEL` | `gpt-4o-mini` | Set this to the model ID returned by your local inference server |
+
+**Important:** a 300-second timeout applies to each individual model request,
+not to the overall multi-agent workflow. Sequential execution can increase
+total latency; it is an option for stability rather than a speed optimization.
+A configured LLM provider is not by itself proof of a successful inference.
+
+The trace records which specialists were selected, whether they invoked a
+tool, tool results, and sanitized specialist failures. When a specialist
+doesn't execute a required tool, the grounded composer reports that the
+corresponding data could not be verified rather than inventing facts.
+Tool-call consistency still varies between models and prompts.
+
 ## Verification
 
 ```powershell
