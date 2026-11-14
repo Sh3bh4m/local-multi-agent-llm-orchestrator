@@ -9,15 +9,23 @@ function restoreEnv(name, oldValue) {
   else process.env[name] = oldValue;
 }
 
-test("local inference settings have bounded defaults", () => {
-  assert.equal(modelTimeoutMs(undefined), 120000);
+test("local inference settings use valid overrides and bounded fallbacks", () => {
+  // Explicit invalid inputs are environment-independent.
+  // Passing undefined intentionally reads the current environment.
   assert.equal(modelTimeoutMs("not-a-number"), 120000);
   assert.equal(modelTimeoutMs("500"), 120000);
   assert.equal(modelTimeoutMs("900000"), 120000);
   assert.equal(modelTimeoutMs("240000"), 240000);
-  assert.equal(agentExecutionMode(undefined), "parallel");
   assert.equal(agentExecutionMode("sequential"), "sequential");
   assert.equal(agentExecutionMode("invalid"), "parallel");
+  assert.equal(
+    modelTimeoutMs(undefined),
+    modelTimeoutMs(process.env.MODEL_TIMEOUT_MS)
+  );
+  assert.equal(
+    agentExecutionMode(undefined),
+    agentExecutionMode(process.env.AGENT_EXECUTION_MODE)
+  );
 });
 
 test("fictional order lookup rejects inherited properties and invalid arguments", () => {
